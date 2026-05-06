@@ -1,0 +1,22 @@
+---
+import { icon } from "../scripts/icons.js";
+---
+<section id="login" class="wrap login-card">
+	<div class="panel">
+		<h1><Fragment set:html={icon("lock")} />FFM AR Marker Admin</h1>
+		<p class="muted" style="margin-top:4px;">Enter the website password to continue.</p>
+		<div class="field-group">
+			<label for="password">Password</label>
+			<input id="password" type="password" autocomplete="current-password" />
+		</div>
+		<label class="toggle" style="margin-bottom: 14px;">
+			<input id="remember" type="checkbox" />
+			<span>Remember me on this device</span>
+		</label>
+		<div class="row">
+			<button id="loginBtn"><Fragment set:html={icon("login")} /><span>Sign in</span></button>
+			<span id="loginMsg" class="muted"></span>
+		</div>
+	</div>
+</section>
+

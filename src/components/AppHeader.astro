@@ -1,0 +1,11 @@
+---
+import { icon } from "../scripts/icons.js";
+---
+<header class="app-header">
+	<h1><Fragment set:html={icon("tag")} />FFM AR Marker Editor</h1>
+	<span id="health" class="health"><span class="dot"></span><span>checking…</span></span>
+	<div class="spacer"></div>
+	<button id="reloadBtn" class="secondary icon-only" title="Reload" aria-label="Reload"><Fragment set:html={icon("refresh")} /></button>
+	<button id="logoutBtn" class="secondary icon-only" title="Sign out" aria-label="Sign out"><Fragment set:html={icon("logout")} /></button>
+</header>
+

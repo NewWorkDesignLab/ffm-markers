@@ -1,0 +1,15 @@
+---
+import { icon } from "../scripts/icons.js";
+---
+<section class="panel">
+	<h2><Fragment set:html={icon("settings")} />Global settings</h2>
+	<div class="row">
+		<label class="toggle">
+			<input id="useOcclusion" type="checkbox" />
+			<span>Use occlusion</span>
+		</label>
+		<div class="spacer"></div>
+		<button id="saveOcclusionBtn"><Fragment set:html={icon("save")} /><span>Save</span></button>
+	</div>
+</section>
+

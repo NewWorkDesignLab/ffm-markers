@@ -1,15 +1,32 @@
 ---
+import Layout from "../layouts/Layout.astro";
+import LoginView from "../components/LoginView.astro";
+import AppHeader from "../components/AppHeader.astro";
+import OcclusionPanel from "../components/OcclusionPanel.astro";
+import AddMarkerPanel from "../components/AddMarkerPanel.astro";
+import MarkersPanel from "../components/MarkersPanel.astro";
+import Toast from "../components/Toast.astro";
 
+const API_BASE = "https://api.00224466.xyz/ffm-ar-data";
+const API_KEY = import.meta.env.PUBLIC_API_KEY ?? "";
 ---
+<Layout>
+	<LoginView />
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>FFM AR Marker Config</title>
-	</head>
-	<body>
-		<h1>Marker Config</h1>
-	</body>
-</html>
+	<main id="app" class="wrap hidden">
+		<AppHeader />
+		<OcclusionPanel />
+		<AddMarkerPanel />
+		<MarkersPanel />
+	</main>
+
+	<Toast />
+
+	<script is:inline define:vars={{ API_BASE, API_KEY }}>
+		window.__APP_CONFIG__ = { API_BASE, API_KEY };
+	</script>
+	<script>
+		import "../scripts/main.js";
+	</script>
+</Layout>
+

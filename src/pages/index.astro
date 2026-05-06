@@ -24,6 +24,13 @@ const API_KEY = import.meta.env.PUBLIC_API_KEY ?? "";
 
 	<script is:inline define:vars={{ API_BASE, API_KEY }}>
 		window.__APP_CONFIG__ = { API_BASE, API_KEY };
+		try {
+			var hasPw = !!(localStorage.getItem("ffm-ar-pw") || sessionStorage.getItem("ffm-ar-pw-session"));
+			if (!hasPw) {
+				var loginEl = document.getElementById("login");
+				if (loginEl) loginEl.classList.remove("hidden");
+			}
+		} catch (e) {}
 	</script>
 	<script>
 		import "../scripts/main.js";

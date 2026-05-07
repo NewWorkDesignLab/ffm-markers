@@ -7,9 +7,9 @@ import AddMarkerPanel from "../components/AddMarkerPanel.astro";
 import MarkersPanel from "../components/MarkersPanel.astro";
 import Toast from "../components/Toast.astro";
 
-const API_BASE = "https://api.00224466.xyz/ffm-ar-data";
-const API_KEY = import.meta.env.PUBLIC_API_KEY ?? "";
+const API_BASE = "https://api-gateway-00224466.ludorfjonas.workers.dev/ffm-ar-data";
 ---
+
 <Layout>
 	<LoginView />
 
@@ -22,8 +22,8 @@ const API_KEY = import.meta.env.PUBLIC_API_KEY ?? "";
 
 	<Toast />
 
-	<script is:inline define:vars={{ API_BASE, API_KEY }}>
-		window.__APP_CONFIG__ = { API_BASE, API_KEY };
+	<script is:inline define:vars={{ API_BASE }}>
+		window.__APP_CONFIG__ = { API_BASE };
 		try {
 			var hasPw = !!(localStorage.getItem("ffm-ar-pw") || sessionStorage.getItem("ffm-ar-pw-session"));
 			if (!hasPw) {

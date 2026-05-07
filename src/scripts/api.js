@@ -2,9 +2,8 @@ const STORAGE_KEY = "ffm-ar-pw";
 const SESSION_KEY = "ffm-ar-pw-session";
 
 export class ApiClient {
-	constructor(baseUrl, apiKey) {
+	constructor(baseUrl) {
 		this.baseUrl = baseUrl;
-		this.apiKey = apiKey || "";
 		this.password = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(SESSION_KEY) || "";
 	}
 
@@ -29,7 +28,6 @@ export class ApiClient {
 
 	async request(path, opts = {}) {
 		const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
-		if (path !== "/health") headers["X-API-Key"] = this.apiKey;
 		const res = await fetch(this.baseUrl + path, Object.assign({}, opts, { headers }));
 		if (res.status === 401 || res.status === 403) {
 			this.forgetPassword();
@@ -44,7 +42,7 @@ export class ApiClient {
 	}
 
 	async login(password) {
-		const headers = { "Content-Type": "application/json", "X-API-Key": this.apiKey };
+		const headers = { "Content-Type": "application/json" };
 		const res = await fetch(this.baseUrl + "/auth/login", {
 			method: "POST",
 			headers,

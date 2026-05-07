@@ -3,7 +3,7 @@ import { showToast } from "./toast.js";
 import { createMarkerCard, defaultConfig } from "./markerCard.js";
 
 const cfg = (window).__APP_CONFIG__ || {};
-const api = new ApiClient(cfg.API_BASE, cfg.API_KEY);
+const api = new ApiClient(cfg.API_BASE);
 
 const $ = (id) => document.getElementById(id);
 const loginEl = $("login");
@@ -145,7 +145,6 @@ async function trySignIn() {
 	const remember = $("remember").checked;
 	const msg = $("loginMsg");
 	if (!password) { msg.textContent = "Enter the password."; return; }
-	if (!api.apiKey) { msg.textContent = "Build is missing PUBLIC_API_KEY."; return; }
 	msg.textContent = "Signing in…";
 	try {
 		await api.login(password);

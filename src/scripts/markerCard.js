@@ -1,4 +1,5 @@
 import { icon } from "./icons.js";
+import * as THREE from "three";
 
 export function defaultConfig(name) {
 	return {
@@ -7,6 +8,32 @@ export function defaultConfig(name) {
 		rotationOffset: { x: 0, y: 0, z: 0, w: 1 },
 		scaleMultiplier: { x: 1, y: 1, z: 1 },
 	};
+}
+
+function quatToEulerDeg(q) {
+	const round = (v) => Math.round(v * 100) / 100;
+	const xq = q.x || 0;
+	const yq = q.y || 0;
+	const zq = q.z || 0;
+	const wq = q.w ?? 1;
+	const outOfRange =
+		Math.abs(xq) > 1 || Math.abs(yq) > 1 || Math.abs(zq) > 1 || Math.abs(wq) > 1;
+	if (outOfRange) {
+		return { x: round(xq), y: round(yq), z: round(zq) };
+	}
+	const e = new THREE.Euler().setFromQuaternion(
+		new THREE.Quaternion(xq, yq, zq, wq).normalize(),
+		"XYZ",
+	);
+	const r = 180 / Math.PI;
+	return { x: round(e.x * r), y: round(e.y * r), z: round(e.z * r) };
+}
+
+function eulerDegToQuat(eDeg) {
+	const r = Math.PI / 180;
+	const e = new THREE.Euler((eDeg.x || 0) * r, (eDeg.y || 0) * r, (eDeg.z || 0) * r, "XYZ");
+	const q = new THREE.Quaternion().setFromEuler(e);
+	return { x: q.x, y: q.y, z: q.z, w: q.w };
 }
 
 function vecRow(label, iconName, obj, keys, onChange, options = {}) {
@@ -28,7 +55,7 @@ function vecRow(label, iconName, obj, keys, onChange, options = {}) {
 		sub.textContent = k;
 		const inp = document.createElement("input");
 		inp.type = "number";
-		inp.step = "0.001";
+		inp.step = "1";
 		inp.value = String(obj[k] ?? 0);
 		inputs[k] = inp;
 		if (readOnlyKeys.includes(k)) {
@@ -62,17 +89,40 @@ function makeBtn(iconName, label, className = "") {
 }
 
 export function createMarkerCard(cfg, { isDirty, onSave, onDelete, onRename, onDirtyChange }) {
+	{
+		const q = cfg.rotationOffset || { x: 0, y: 0, z: 0, w: 1 };
+		if (
+			Math.abs(q.x || 0) > 1 || Math.abs(q.y || 0) > 1 ||
+			Math.abs(q.z || 0) > 1 || Math.abs(q.w ?? 1) > 1
+		) {
+			cfg.rotationOffset = eulerDegToQuat({ x: q.x || 0, y: q.y || 0, z: q.z || 0 });
+		}
+	}
 	const card = document.createElement("div");
-	card.className = "marker";
+	card.className = "marker collapsed";
 	if (isDirty) card.classList.add("dirty");
 
 	const head = document.createElement("div");
 	head.className = "marker-head";
 
+	const headLeft = document.createElement("div");
+	headLeft.className = "marker-head-left";
+
+	const toggleBtn = document.createElement("button");
+	toggleBtn.type = "button";
+	toggleBtn.className = "ghost icon-only marker-toggle";
+	toggleBtn.title = "Expand";
+	toggleBtn.setAttribute("aria-expanded", "false");
+	toggleBtn.innerHTML = icon("chevron");
+
 	const nameWrap = document.createElement("div");
 	nameWrap.className = "marker-name";
 	nameWrap.innerHTML = `${icon("tag")}<span class="marker-name-text">${cfg.markerName}</span>`;
-	head.appendChild(nameWrap);
+	nameWrap.style.cursor = "pointer";
+
+	headLeft.appendChild(toggleBtn);
+	headLeft.appendChild(nameWrap);
+	head.appendChild(headLeft);
 
 	const actions = document.createElement("div");
 	actions.className = "actions";
@@ -90,10 +140,54 @@ export function createMarkerCard(cfg, { isDirty, onSave, onDelete, onRename, onD
 	head.appendChild(actions);
 	card.appendChild(head);
 
+	const body = document.createElement("div");
+	body.className = "marker-body";
+	card.appendChild(body);
+
+	const viewportEl = document.createElement("div");
+	viewportEl.className = "marker-viewport";
+
+	let viewport = null;
+	let viewportLoading = false;
+
+	const ensureViewport = () => {
+		if (viewport || viewportLoading) return;
+		viewportLoading = true;
+		import("./markerViewport.js")
+			.then((mod) => {
+				viewport = mod.createMarkerViewport(viewportEl, cfg);
+			})
+			.catch((err) => {
+				console.error("Viewport load failed:", err);
+			})
+			.finally(() => {
+				viewportLoading = false;
+			});
+	};
+
+	const expand = () => {
+		if (!card.classList.contains("collapsed")) return;
+		card.classList.remove("collapsed");
+		toggleBtn.setAttribute("aria-expanded", "true");
+		toggleBtn.title = "Collapse";
+		requestAnimationFrame(ensureViewport);
+	};
+	const collapse = () => {
+		card.classList.add("collapsed");
+		toggleBtn.setAttribute("aria-expanded", "false");
+		toggleBtn.title = "Expand";
+	};
+	const toggle = () => {
+		if (card.classList.contains("collapsed")) expand(); else collapse();
+	};
+	toggleBtn.addEventListener("click", toggle);
+	nameWrap.addEventListener("click", toggle);
+
 	const markDirty = () => {
 		saveBtn.disabled = false;
 		card.classList.add("dirty");
 		onDirtyChange(cfg.markerName);
+		if (viewport) viewport.update(cfg);
 	};
 
 	saveBtn.addEventListener("click", () => onSave(cfg, saveBtn, card));
@@ -141,25 +235,22 @@ export function createMarkerCard(cfg, { isDirty, onSave, onDelete, onRename, onD
 		});
 	});
 
-	card.appendChild(vecRow("Position offset", "move", cfg.positionOffset, ["x", "y", "z"], markDirty));
-	card.appendChild(vecRow(
-		"Rotation offset (quaternion)",
+	body.appendChild(vecRow("Position offset", "move", cfg.positionOffset, ["x", "y", "z"], markDirty));
+
+	const eulerState = quatToEulerDeg(cfg.rotationOffset);
+	body.appendChild(vecRow(
+		"Rotation offset (Euler °)",
 		"rotate",
-		cfg.rotationOffset,
-		["x", "y", "z", "w"],
-		markDirty,
-		{
-			readOnlyKeys: ["w"],
-			onAfterEdit: (_k, inputs) => {
-				const q = cfg.rotationOffset;
-				const sum = (q.x ?? 0) ** 2 + (q.y ?? 0) ** 2 + (q.z ?? 0) ** 2;
-				const w = Math.sqrt(Math.max(0, 1 - sum));
-				q.w = w;
-				inputs.w.value = String(Number(w.toFixed(6)));
-			},
+		eulerState,
+		["x", "y", "z"],
+		() => {
+			Object.assign(cfg.rotationOffset, eulerDegToQuat(eulerState));
+			markDirty();
 		},
 	));
-	card.appendChild(vecRow("Scale multiplier", "scale", cfg.scaleMultiplier, ["x", "y", "z"], markDirty));
+
+	body.appendChild(vecRow("Scale multiplier", "scale", cfg.scaleMultiplier, ["x", "y", "z"], markDirty));
+	body.appendChild(viewportEl);
 
 	return card;
 }

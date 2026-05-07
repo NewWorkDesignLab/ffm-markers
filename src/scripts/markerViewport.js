@@ -57,6 +57,9 @@ export function createMarkerViewport(container, cfg) {
 	grid.material.opacity = 0.9;
 	scene.add(grid);
 
+	const markerRoot = new THREE.Group();
+	scene.add(markerRoot);
+
 	const markerMat = new THREE.MeshBasicMaterial({
 		color: 0x1a1d24,
 		side: THREE.DoubleSide,
@@ -65,14 +68,14 @@ export function createMarkerViewport(container, cfg) {
 	});
 	const markerMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.25), markerMat);
 	markerMesh.rotation.x = -Math.PI / 2;
-	scene.add(markerMesh);
+	markerRoot.add(markerMesh);
 
 	const markerEdges = new THREE.LineSegments(
 		new THREE.EdgesGeometry(new THREE.PlaneGeometry(0.25, 0.25)),
 		new THREE.LineBasicMaterial({ color: 0x2563eb }),
 	);
 	markerEdges.rotation.x = -Math.PI / 2;
-	scene.add(markerEdges);
+	markerRoot.add(markerEdges);
 
 	const arrow = new THREE.ArrowHelper(
 		new THREE.Vector3(0, 1, 0),
@@ -82,13 +85,13 @@ export function createMarkerViewport(container, cfg) {
 		0.06,
 		0.04,
 	);
-	scene.add(arrow);
+	markerRoot.add(arrow);
 
-	scene.add(new THREE.AxesHelper(0.4));
+	markerRoot.add(new THREE.AxesHelper(0.4));
 
 	const markerSpace = new THREE.Group();
 	markerSpace.rotation.x = -Math.PI / 2;
-	scene.add(markerSpace);
+	markerRoot.add(markerSpace);
 
 	const modelGroup = new THREE.Group();
 	markerSpace.add(modelGroup);
@@ -208,6 +211,9 @@ export function createMarkerViewport(container, cfg) {
 	return {
 		update(c) {
 			applyOffset(c);
+		},
+		setFlipped(flag) {
+			markerRoot.rotation.x = flag ? Math.PI / 2 : 0;
 		},
 		dispose() {
 			running = false;

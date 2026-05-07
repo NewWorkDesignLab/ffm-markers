@@ -130,6 +130,8 @@ export function createMarkerCard(cfg, { isDirty, onSave, onDelete, onRename, onD
 
 	const renameBtn = makeBtn("pencil", "", "ghost icon-only");
 	renameBtn.title = "Rename";
+	const flipBtn = makeBtn("flip", "", "ghost icon-only viewport-overlay-btn");
+	flipBtn.title = "Flip marker (rotate 90° on X)";
 	const saveBtn = makeBtn("save", "", "icon-only");
 	saveBtn.title = "Save";
 	saveBtn.disabled = !isDirty;
@@ -151,9 +153,11 @@ export function createMarkerCard(cfg, { isDirty, onSave, onDelete, onRename, onD
 
 	const viewportEl = document.createElement("div");
 	viewportEl.className = "marker-viewport";
+	viewportEl.appendChild(flipBtn);
 
 	let viewport = null;
 	let viewportLoading = false;
+	let flipped = false;
 
 	const ensureViewport = () => {
 		if (viewport || viewportLoading) return;
@@ -161,6 +165,7 @@ export function createMarkerCard(cfg, { isDirty, onSave, onDelete, onRename, onD
 		import("./markerViewport.js")
 			.then((mod) => {
 				viewport = mod.createMarkerViewport(viewportEl, cfg);
+				viewport.setFlipped(flipped);
 			})
 			.catch((err) => {
 				console.error("Viewport load failed:", err);
@@ -197,6 +202,14 @@ export function createMarkerCard(cfg, { isDirty, onSave, onDelete, onRename, onD
 
 	saveBtn.addEventListener("click", () => onSave(cfg, saveBtn, card));
 	delBtn.addEventListener("click", () => onDelete(cfg.markerName));
+
+	flipBtn.addEventListener("click", (e) => {
+		e.stopPropagation();
+		flipped = !flipped;
+		flipBtn.classList.toggle("active", flipped);
+		if (card.classList.contains("collapsed")) expand();
+		if (viewport) viewport.setFlipped(flipped);
+	});
 
 	qrBtn.addEventListener("click", async () => {
 		qrBtn.disabled = true;

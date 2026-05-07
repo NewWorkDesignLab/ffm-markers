@@ -52,7 +52,7 @@ export function createMarkerViewport(container, cfg) {
 	dir.position.set(5, 10, 7);
 	scene.add(dir);
 
-	const grid = new THREE.GridHelper(5, 10, 0x2563eb, 0xcbd1db);
+	const grid = new THREE.GridHelper(20, 20, 0x2563eb, 0xcbd1db);
 	grid.material.transparent = true;
 	grid.material.opacity = 0.9;
 	scene.add(grid);

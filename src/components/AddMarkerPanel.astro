@@ -4,10 +4,11 @@ import { icon } from "../scripts/icons.js";
 <section class="panel">
 	<h2><Fragment set:html={icon("plus")} />Add new marker</h2>
 	<div class="row">
-		<div style="flex: 1; min-width: 220px;">
+		<div class="name-input-group" style="flex: 1; min-width: 220px;">
+			<span class="name-prefix">ffm_</span>
 			<input id="newName" type="text" placeholder="marker_name" />
 		</div>
-		<button id="addBtn"><Fragment set:html={icon("plus")} /><span>Create</span></button>
+		<button id="addBtn" class="icon-only" title="Create"><Fragment set:html={icon("plus")} /></button>
 	</div>
 </section>
 

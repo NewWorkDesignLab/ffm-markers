@@ -117,7 +117,8 @@ export function createMarkerCard(cfg, { isDirty, onSave, onDelete, onRename, onD
 
 	const nameWrap = document.createElement("div");
 	nameWrap.className = "marker-name";
-	nameWrap.innerHTML = `${icon("tag")}<span class="marker-name-text">${cfg.markerName}</span>`;
+	const nameSuffix = (cfg.markerName || "").replace(/^ffm_/, "");
+	nameWrap.innerHTML = `${icon("tag")}<span class="name-text-wrap"><span class="name-prefix">ffm_</span><span class="marker-name-text">${nameSuffix}</span></span>`;
 	nameWrap.style.cursor = "pointer";
 
 	headLeft.appendChild(toggleBtn);
@@ -129,13 +130,17 @@ export function createMarkerCard(cfg, { isDirty, onSave, onDelete, onRename, onD
 
 	const renameBtn = makeBtn("pencil", "", "ghost icon-only");
 	renameBtn.title = "Rename";
-	const saveBtn = makeBtn("save", "Save");
+	const saveBtn = makeBtn("save", "", "icon-only");
+	saveBtn.title = "Save";
 	saveBtn.disabled = !isDirty;
+	const qrBtn = makeBtn("qr", "", "icon-only");
+	qrBtn.title = "Download QR Code";
 	const delBtn = makeBtn("trash", "", "danger icon-only");
 	delBtn.title = "Delete";
 
 	actions.appendChild(renameBtn);
 	actions.appendChild(saveBtn);
+	actions.appendChild(qrBtn);
 	actions.appendChild(delBtn);
 	head.appendChild(actions);
 	card.appendChild(head);
@@ -193,18 +198,50 @@ export function createMarkerCard(cfg, { isDirty, onSave, onDelete, onRename, onD
 	saveBtn.addEventListener("click", () => onSave(cfg, saveBtn, card));
 	delBtn.addEventListener("click", () => onDelete(cfg.markerName));
 
+	qrBtn.addEventListener("click", async () => {
+		qrBtn.disabled = true;
+		try {
+			const QR = (await import("qrcode")).default;
+			const payload = cfg.markerName.startsWith("ffm_") ? cfg.markerName : `ffm_${cfg.markerName}`;
+			const url = await QR.toDataURL(payload, {
+				width: 500,
+				margin: 2,
+				errorCorrectionLevel: "M",
+				color: { dark: "#000000", light: "#ffffff" },
+			});
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `${payload}.png`;
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+		} catch (e) {
+			console.error("QR generation failed:", e);
+		} finally {
+			qrBtn.disabled = false;
+		}
+	});
+
 	renameBtn.addEventListener("click", () => {
 		if (head.querySelector(".rename-row")) return;
 		const row = document.createElement("div");
 		row.className = "rename-row";
+		const inputGroup = document.createElement("div");
+		inputGroup.className = "name-input-group";
+		inputGroup.style.flex = "1";
+		const prefix = document.createElement("span");
+		prefix.className = "name-prefix";
+		prefix.textContent = "ffm_";
 		const inp = document.createElement("input");
 		inp.type = "text";
-		inp.value = cfg.markerName;
+		inp.value = (cfg.markerName || "").replace(/^ffm_/, "");
+		inputGroup.appendChild(prefix);
+		inputGroup.appendChild(inp);
 		const okBtn = makeBtn("check", "", "icon-only");
 		okBtn.title = "Confirm rename";
 		const cancelBtn = makeBtn("x", "", "ghost icon-only");
 		cancelBtn.title = "Cancel";
-		row.appendChild(inp);
+		row.appendChild(inputGroup);
 		row.appendChild(okBtn);
 		row.appendChild(cancelBtn);
 
@@ -216,8 +253,10 @@ export function createMarkerCard(cfg, { isDirty, onSave, onDelete, onRename, onD
 			row.replaceWith(nameWrap);
 		};
 		const confirm = async () => {
-			const newName = inp.value.trim();
-			if (!newName || newName === cfg.markerName) { cancel(); return; }
+			const suffix = inp.value.trim().replace(/^ffm_/, "");
+			if (!suffix) { cancel(); return; }
+			const newName = `ffm_${suffix}`;
+			if (newName === cfg.markerName) { cancel(); return; }
 			okBtn.disabled = true;
 			cancelBtn.disabled = true;
 			try {

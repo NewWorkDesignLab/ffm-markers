@@ -104,8 +104,9 @@ async function renameOne(markerCfg, newName) {
 }
 
 async function addNew() {
-	const name = $("newName").value.trim();
-	if (!name) { toast("Name required", "error"); return; }
+	const raw = $("newName").value.trim().replace(/^ffm_/, "");
+	if (!raw) { toast("Name required", "error"); return; }
+	const name = `ffm_${raw}`;
 	if (state.configs.some((c) => c.markerName === name)) {
 		toast("Marker already exists", "error");
 		return;

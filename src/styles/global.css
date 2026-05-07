@@ -91,6 +91,39 @@ input.readonly:focus, input[readonly]:focus { border-color: var(--border-strong)
 .rename-row { display: flex; gap: 6px; align-items: center; flex: 1; min-width: 240px; }
 .rename-row input { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; padding: 4px 8px; }
 
+.name-input-group {
+	display: inline-flex;
+	align-items: stretch;
+	background: #fff;
+	border: 1px solid var(--border-strong);
+	border-radius: 6px;
+	overflow: hidden;
+	transition: border-color 0.12s, box-shadow 0.12s;
+}
+.name-input-group:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.name-input-group .name-prefix {
+	display: inline-flex;
+	align-items: center;
+	padding: 0 6px 0 8px;
+	color: var(--muted);
+	background: var(--panel-2);
+	border-right: 1px solid var(--border);
+	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	font-size: 13px;
+	user-select: none;
+}
+.name-input-group input { border: none !important; box-shadow: none !important; border-radius: 0; padding: 6px 8px; }
+.name-input-group input:focus { box-shadow: none !important; }
+
+.marker-name .name-prefix {
+	color: var(--muted);
+	user-select: none;
+}
+.marker-name .name-text-wrap {
+	display: inline-flex;
+	align-items: baseline;
+}
+
 .vec { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; align-items: end; }
 .vec input[type="number"] { width: 100%; padding: 4px 6px; font-size: 12px; }
 .vec label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }

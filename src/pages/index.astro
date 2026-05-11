@@ -6,8 +6,6 @@ import OcclusionPanel from "../components/OcclusionPanel.astro";
 import AddMarkerPanel from "../components/AddMarkerPanel.astro";
 import MarkersPanel from "../components/MarkersPanel.astro";
 import Toast from "../components/Toast.astro";
-
-const API_BASE = "https://api-gateway-00224466.ludorfjonas.workers.dev/ffm-ar-data";
 ---
 
 <Layout>
@@ -22,8 +20,7 @@ const API_BASE = "https://api-gateway-00224466.ludorfjonas.workers.dev/ffm-ar-da
 
 	<Toast />
 
-	<script is:inline define:vars={{ API_BASE }}>
-		window.__APP_CONFIG__ = { API_BASE };
+	<script is:inline>
 		try {
 			var hasPw = !!(localStorage.getItem("ffm-ar-pw") || sessionStorage.getItem("ffm-ar-pw-session"));
 			if (!hasPw) {

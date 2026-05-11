@@ -2,8 +2,7 @@ import { ApiClient } from "./api.js";
 import { showToast } from "./toast.js";
 import { createMarkerCard, defaultConfig } from "./markerCard.js";
 
-const cfg = (window).__APP_CONFIG__ || {};
-const api = new ApiClient(cfg.API_BASE);
+const api = new ApiClient();
 
 const $ = (id) => document.getElementById(id);
 const loginEl = $("login");

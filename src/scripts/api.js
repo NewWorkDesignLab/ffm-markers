@@ -1,10 +1,15 @@
+
+import { ffm } from "../lib/ffm-client.ts";
+
 const STORAGE_KEY = "ffm-ar-pw";
 const SESSION_KEY = "ffm-ar-pw-session";
 
 export class ApiClient {
-	constructor(baseUrl) {
-		this.baseUrl = baseUrl;
-		this.password = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(SESSION_KEY) || "";
+	constructor() {
+		this.password =
+			localStorage.getItem(STORAGE_KEY) ||
+			sessionStorage.getItem(SESSION_KEY) ||
+			"";
 	}
 
 	hasStoredPassword() { return !!this.password; }
@@ -26,49 +31,20 @@ export class ApiClient {
 		sessionStorage.removeItem(SESSION_KEY);
 	}
 
-	async request(path, opts = {}) {
-		const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
-		const res = await fetch(this.baseUrl + path, Object.assign({}, opts, { headers }));
-		if (res.status === 401 || res.status === 403) {
-			this.forgetPassword();
-			throw new Error("Unauthorized");
+	async _wrap(promise) {
+		try {
+			return await promise;
+		} catch (e) {
+			if (e && e.message === "Unauthorized") this.forgetPassword();
+			throw e;
 		}
-		if (!res.ok) {
-			const text = await res.text().catch(() => "");
-			throw new Error(`${res.status} ${res.statusText} ${text}`);
-		}
-		const ct = res.headers.get("content-type") || "";
-		return ct.includes("application/json") ? res.json() : res.text();
 	}
 
-	async login(password) {
-		const headers = { "Content-Type": "application/json" };
-		const res = await fetch(this.baseUrl + "/auth/login", {
-			method: "POST",
-			headers,
-			body: JSON.stringify({ password }),
-		});
-		if (res.status === 401) throw new Error("Invalid password");
-		if (!res.ok) {
-			const text = await res.text().catch(() => "");
-			throw new Error(`${res.status} ${res.statusText} ${text}`);
-		}
-		const data = await res.json().catch(() => ({}));
-		if (!data.success) throw new Error("Login failed");
-		return true;
-	}
-
-	health() { return this.request("/health"); }
-	listConfigs() { return this.request("/configs"); }
-	saveConfig(cfg) {
-		return this.request("/configs/" + encodeURIComponent(cfg.markerName), {
-			method: "PUT",
-			body: JSON.stringify(cfg),
-		});
-	}
-	deleteConfig(name) {
-		return this.request("/configs/" + encodeURIComponent(name), { method: "DELETE" });
-	}
+	login(password) { return ffm.login(password); }
+	health() { return this._wrap(ffm.health()); }
+	listConfigs() { return this._wrap(ffm.listConfigs()); }
+	saveConfig(cfg) { return this._wrap(ffm.saveConfig(cfg)); }
+	deleteConfig(name) { return this._wrap(ffm.deleteConfig(name)); }
 	async renameConfig(oldName, newName, cfg) {
 		const next = Object.assign({}, cfg, { markerName: newName });
 		await this.saveConfig(next);
@@ -80,12 +56,7 @@ export class ApiClient {
 		}
 		return next;
 	}
-	getOcclusion() { return this.request("/settings/occlusion"); }
-	setOcclusion(value) {
-		return this.request("/settings/occlusion", {
-			method: "PUT",
-			body: JSON.stringify({ useOcclusion: value }),
-		});
-	}
+	getOcclusion() { return this._wrap(ffm.getOcclusion()); }
+	setOcclusion(value) { return this._wrap(ffm.setOcclusion(value)); }
 }
 

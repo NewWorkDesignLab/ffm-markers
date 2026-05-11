@@ -1,36 +1,40 @@
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+import type { MarkerConfig } from '../lib/ffm-client.ts';
 
-const BASE = (import.meta.env?.BASE_URL ?? "/").replace(/\/$/, "");
+const BASE = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
 const MODEL_URL = `${BASE}/FFM_Modell_Unity.fbx`;
 
 const BLANK_PNG =
-	"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
+	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
 
-let modelPromise = null;
-function loadModel() {
+let modelPromise: Promise<THREE.Group> | null = null;
+
+function loadModel(): Promise<THREE.Group> {
 	if (!modelPromise) {
 		const manager = new THREE.LoadingManager();
 		manager.setURLModifier((url) => {
 			if (url === MODEL_URL) return url;
-			if (/\.(png|jpe?g|tga|bmp|gif|tif?f|exr|hdr)(\?.*)?$/i.test(url)) {
-				return BLANK_PNG;
-			}
+			if (/\.(png|jpe?g|tga|bmp|gif|tif?f|exr|hdr)(\?.*)?$/i.test(url)) return BLANK_PNG;
 			return url;
 		});
-		manager.onError = (url) => {
-			console.warn("[markerViewport] asset missing, ignored:", url);
-		};
+		manager.onError = (url) => { console.warn('[markerViewport] asset missing, ignored:', url); };
 		const loader = new FBXLoader(manager);
 		modelPromise = new Promise((resolve, reject) => {
-			loader.load(MODEL_URL, (obj) => resolve(obj), undefined, (err) => reject(err));
+			loader.load(MODEL_URL, (obj) => resolve(obj as unknown as THREE.Group), undefined, reject);
 		});
 	}
-	return modelPromise.then((obj) => obj.clone(true));
+	return modelPromise.then((obj) => (obj as unknown as { clone: (deep: boolean) => THREE.Group }).clone(true));
 }
 
-export function createMarkerViewport(container, cfg) {
+export interface MarkerViewport {
+	update(cfg: MarkerConfig): void;
+	setFlipped(flag: boolean): void;
+	dispose(): void;
+}
+
+export function createMarkerViewport(container: HTMLElement, cfg: MarkerConfig): MarkerViewport {
 	const width = () => container.clientWidth || 320;
 	const height = () => container.clientHeight || 220;
 
@@ -53,8 +57,8 @@ export function createMarkerViewport(container, cfg) {
 	scene.add(dir);
 
 	const grid = new THREE.GridHelper(20, 20, 0x2563eb, 0xcbd1db);
-	grid.material.transparent = true;
-	grid.material.opacity = 0.9;
+	(grid.material as THREE.Material).transparent = true;
+	(grid.material as THREE.Material).opacity = 0.9;
 	scene.add(grid);
 
 	const markerRoot = new THREE.Group();
@@ -80,13 +84,9 @@ export function createMarkerViewport(container, cfg) {
 	const arrow = new THREE.ArrowHelper(
 		new THREE.Vector3(0, 1, 0),
 		new THREE.Vector3(0, 0, 0),
-		0.25,
-		0x16a34a,
-		0.06,
-		0.04,
+		0.25, 0x16a34a, 0.06, 0.04,
 	);
 	markerRoot.add(arrow);
-
 	markerRoot.add(new THREE.AxesHelper(0.4));
 
 	const markerSpace = new THREE.Group();
@@ -105,12 +105,9 @@ export function createMarkerViewport(container, cfg) {
 	loadModel()
 		.then((obj) => {
 			modelGroup.remove(placeholder);
-
 			obj.updateMatrixWorld(true);
-			const meshes = [];
-			obj.traverse((child) => {
-				if (child.isMesh) meshes.push(child);
-			});
+			const meshes: THREE.Mesh[] = [];
+			obj.traverse((child) => { if ((child as THREE.Mesh).isMesh) meshes.push(child as THREE.Mesh); });
 			const flat = new THREE.Group();
 			const sharedMat = new THREE.MeshBasicMaterial({
 				color: 0x000000,
@@ -125,12 +122,9 @@ export function createMarkerViewport(container, cfg) {
 			for (const mesh of meshes) {
 				const geo = mesh.geometry.clone();
 				geo.applyMatrix4(mesh.matrixWorld);
-				const m = new THREE.Mesh(geo, sharedMat);
-				flat.add(m);
+				flat.add(new THREE.Mesh(geo, sharedMat));
 			}
-
 			modelGroup.add(flat);
-
 			flat.scale.setScalar(0.5 * 0.01);
 
 			try {
@@ -140,7 +134,6 @@ export function createMarkerViewport(container, cfg) {
 				const center = new THREE.Vector3();
 				box.getSize(size);
 				box.getCenter(center);
-
 				const corners = [
 					new THREE.Vector3(box.min.x, box.min.y, box.min.z),
 					new THREE.Vector3(box.min.x, box.min.y, box.max.z),
@@ -156,7 +149,6 @@ export function createMarkerViewport(container, cfg) {
 					size.length() * 0.5,
 					1.5,
 				);
-
 				const fov = (camera.fov * Math.PI) / 180;
 				const dist = (radius / Math.sin(fov / 2)) * 0.45;
 				const dirVec = new THREE.Vector3(1, 0.7, 1).normalize();
@@ -167,21 +159,19 @@ export function createMarkerViewport(container, cfg) {
 				controls.target.set(0, 0, 0);
 				controls.update();
 			} catch (e) {
-				console.warn("auto-frame failed:", e);
+				console.warn('auto-frame failed:', e);
 			}
 		})
-		.catch((err) => {
-			console.warn("FBX load failed:", err);
-		});
+		.catch((err) => { console.warn('FBX load failed:', err); });
 
 	const controls = new OrbitControls(camera, renderer.domElement);
 	controls.enableDamping = true;
 	controls.target.set(0, 0, 0);
 
-	const applyOffset = (c) => {
-		const p = c.positionOffset || { x: 0, y: 0, z: 0 };
-		const q = c.rotationOffset || { x: 0, y: 0, z: 0, w: 1 };
-		const s = c.scaleMultiplier || { x: 1, y: 1, z: 1 };
+	const applyOffset = (c: MarkerConfig) => {
+		const p = (c.positionOffset as { x: number; y: number; z: number }) || { x: 0, y: 0, z: 0 };
+		const q = (c.rotationOffset as { x: number; y: number; z: number; w: number }) || { x: 0, y: 0, z: 0, w: 1 };
+		const s = (c.scaleMultiplier as { x: number; y: number; z: number }) || { x: 1, y: 1, z: 1 };
 		modelGroup.position.set(p.x || 0, p.y || 0, p.z || 0);
 		modelGroup.quaternion.set(q.x || 0, q.y || 0, q.z || 0, q.w ?? 1).normalize();
 		modelGroup.scale.set(s.x || 1, s.y || 1, s.z || 1);
@@ -209,12 +199,8 @@ export function createMarkerViewport(container, cfg) {
 	ro.observe(container);
 
 	return {
-		update(c) {
-			applyOffset(c);
-		},
-		setFlipped(flag) {
-			markerRoot.rotation.x = flag ? Math.PI / 2 : 0;
-		},
+		update(c: MarkerConfig) { applyOffset(c); },
+		setFlipped(flag: boolean) { markerRoot.rotation.x = flag ? Math.PI / 2 : 0; },
 		dispose() {
 			running = false;
 			cancelAnimationFrame(raf);

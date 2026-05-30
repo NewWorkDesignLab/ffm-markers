@@ -8,7 +8,9 @@ export function json(body: unknown, status = 200): Response {
 }
 
 export function getKey(): string | null {
-	return (import.meta.env.FFM_API_KEY as string | undefined) || null;
+	return (import.meta.env.FFM_API_KEY as string | undefined)
+		|| (typeof process !== 'undefined' ? process.env.FFM_API_KEY : undefined)
+		|| null;
 }
 
 export async function proxy(

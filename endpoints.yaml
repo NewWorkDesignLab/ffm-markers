@@ -1,4 +1,4 @@
 api:
-  prefix: /ffm-ar-data
-  base_url: https://api.00224466.xyz
+  prefix: /ffm
+  base_url: https://api.nwdl.org
 
